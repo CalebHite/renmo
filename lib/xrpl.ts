@@ -400,4 +400,37 @@ export class XRPLService {
     const wallet = this.wallets.find(w => w.address === address);
     return wallet?.seed || null;
   }
+
+  async getTransactionHistory(limit: number = 20) {
+    if (!this.wallet) {
+      throw new Error('No wallet connected');
+    }
+
+    if (!this.isConnected) {
+      await this.connect();
+    }
+
+    try {
+      const response = await this.client.request({
+        command: 'account_tx',
+        account: this.wallet.address,
+        limit: limit,
+        ledger_index_min: -1,
+        ledger_index_max: -1,
+        forward: false
+      });
+
+      return response.result.transactions.map((tx: any) => ({
+        hash: tx.tx.hash,
+        type: tx.tx.TransactionType,
+        amount: tx.tx.Amount,
+        destination: tx.tx.Destination,
+        date: new Date(tx.tx.date * 1000),
+        status: tx.meta.TransactionResult === 'tesSUCCESS' ? 'success' : 'failed'
+      }));
+    } catch (error) {
+      console.error('Error getting transaction history:', error);
+      throw error;
+    }
+  }
 } 

@@ -17,6 +17,14 @@ interface XRPLState {
   sendPayment: (destination: string, amount: string) => Promise<void>;
   getBalance: () => Promise<void>;
   getSecretKey: (address: string) => string | null;
+  getTransactionHistory: (limit?: number) => Promise<{
+    hash: string;
+    type: string;
+    amount: any;
+    destination: string;
+    date: Date;
+    status: string;
+  }[]>;
 }
 
 export const useXRPL = create<XRPLState>((set, get) => ({
@@ -114,4 +122,12 @@ export const useXRPL = create<XRPLState>((set, get) => ({
     }
     return xrplService.getSecretKey(address);
   },
+
+  getTransactionHistory: async (limit?: number) => {
+    const { xrplService } = get();
+    if (!xrplService) {
+      throw new Error('XRPL service not connected');
+    }
+    return xrplService.getTransactionHistory(limit);
+  }
 })); 
