@@ -15,7 +15,7 @@ A Venmo-like payment application built on the XRPL (XRP Ledger) using RLUSD (Rip
 - Next.js 15 with TypeScript
 - React 19
 - Tailwind CSS
-- XRPL.js
+- XRPL.jsg
 - Zustand for state management
 
 ## Getting Started
