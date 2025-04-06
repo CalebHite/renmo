@@ -705,45 +705,63 @@ Once the trustline is established, you'll be able to receive ${RLUSD_CURRENCY} a
         forward: false
       });
 
+      if (!response.result?.transactions) {
+        console.log('No transactions found in response');
+        return [];
+      }
+
       return response.result.transactions.map((tx: any) => {
+        if (!tx?.tx_json) {
+          console.log('Transaction data missing tx_json field');
+          return {
+            hash: 'unknown',
+            type: 'Unknown',
+            amount: 'N/A',
+            destination: 'N/A',
+            date: new Date(),
+            status: 'failed',
+            resultCode: 'unknown'
+          };
+        }
+
         // Default values
-        let txType = tx.tx.TransactionType;
+        let txType = tx.tx_json.TransactionType || 'Unknown';
         let amount = 'N/A';
-        let counterparty = 'N/A';
-        let direction = 'N/A';
+        let destination = 'N/A';
         
         // For Payment transactions
         if (txType === 'Payment') {
           // Check if it's a currency payment or XRP payment
-          if (typeof tx.tx.Amount === 'object') {
-            amount = `${tx.tx.Amount.value} ${tx.tx.Amount.currency}`;
-            counterparty = tx.tx.Amount.issuer;
-          } else {
+          const amountField = tx.tx_json.Amount || tx.tx_json.DeliverMax;
+          if (amountField && typeof amountField === 'object') {
+            amount = `${amountField.value} ${amountField.currency}`;
+            destination = tx.tx_json.Destination;
+          } else if (amountField) {
             // XRP amount in drops, convert to XRP
-            amount = `${parseInt(tx.tx.Amount) / 1000000} XRP`;
+            const drops = parseInt(amountField);
+            amount = `${drops / 1000000} XRP`;
+            destination = tx.tx_json.Destination;
           }
-          
-          // Determine if incoming or outgoing
-          direction = tx.tx.Account === this.wallet?.address ? 'outgoing' : 'incoming';
-          counterparty = direction === 'outgoing' ? tx.tx.Destination : tx.tx.Account;
         }
         
         // For TrustSet transactions
-        if (txType === 'TrustSet' && tx.tx.LimitAmount) {
-          amount = `Trust limit: ${tx.tx.LimitAmount.value} ${tx.tx.LimitAmount.currency}`;
-          counterparty = tx.tx.LimitAmount.issuer;
+        if (txType === 'TrustSet' && tx.tx_json.LimitAmount) {
+          amount = `Trust limit: ${tx.tx_json.LimitAmount.value} ${tx.tx_json.LimitAmount.currency}`;
+          destination = tx.tx_json.LimitAmount.issuer;
         }
-        
-        return {
-          hash: tx.tx.hash,
+
+        const processedTx = {
+          hash: tx.hash || 'unknown',
           type: txType,
           amount: amount,
-          counterparty: counterparty,
-          direction: direction,
-          date: new Date((tx.tx.date + 946684800) * 1000), // Convert ripple epoch to JS date
-          status: tx.meta.TransactionResult === 'tesSUCCESS' ? 'success' : 'failed',
-          resultCode: tx.meta.TransactionResult
+          destination: destination,
+          date: new Date(tx.close_time_iso || Date.now()),
+          status: tx.meta?.TransactionResult === 'tesSUCCESS' ? 'success' : 'failed',
+          resultCode: tx.meta?.TransactionResult || 'unknown'
         };
+
+        console.log('Processed transaction:', processedTx);
+        return processedTx;
       });
     } catch (error) {
       console.error('Error getting transaction history:', error);

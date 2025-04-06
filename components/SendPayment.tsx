@@ -105,23 +105,11 @@ export default function SendPayment() {
                 <span className="text-gray-600">Transaction fee:</span>
                 <span>0.00001 RLUSD</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Account reserve:</span>
-                <span>10 RLUSD</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Trust line reserve:</span>
-                <span>2 RLUSD</span>
-              </div>
               <div className="flex justify-between font-medium">
                 <span className="text-gray-700">Total cost:</span>
-                <span>{amount ? (Number(amount) + 12.00001).toFixed(6) : "0"} RLUSD</span>
+                <span>{amount ? (Number(amount) + 0.00001).toFixed(6) : "0"} RLUSD</span>
               </div>
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              Note: The account reserve (10 RLUSD) and trust line reserve (2 RLUSD) are held by the network and can be
-              recovered if the account is closed.
-            </p>
           </CardContent>
         </Card>
 

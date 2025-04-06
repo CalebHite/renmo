@@ -109,7 +109,7 @@ export default function ActivityPage() {
                     <div className="font-medium">
                       {typeof tx.amount === 'object' 
                         ? `${tx.amount.value} ${tx.amount.currency}`
-                        : `${tx.amount} XRP`}
+                        : tx.amount}
                     </div>
                     <div className="text-xs text-gray-500 truncate max-w-[150px]">
                       {tx.hash}
