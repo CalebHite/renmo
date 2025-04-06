@@ -737,9 +737,11 @@ Once the trustline is established, you'll be able to receive ${RLUSD_CURRENCY} a
             amount = `${amountField.value} ${amountField.currency}`;
             destination = tx.tx_json.Destination;
           } else if (amountField) {
-            // XRP amount in drops, convert to XRP
+            // XRP amount in drops, convert to XRP then to USD
             const drops = parseInt(amountField);
-            amount = `${drops / 1000000} XRP`;
+            const xrp = drops / 1000000;
+            const usdValue = (xrp * 0.5).toFixed(2); // Using 0.5 as fixed XRP/USD rate
+            amount = `$${usdValue} USD`;
             destination = tx.tx_json.Destination;
           }
         }
