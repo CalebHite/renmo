@@ -8,8 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Loader2, AlertCircle, CheckCircle2, Eye, EyeOff, Plus, Import, SwitchCamera, Trash2 } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Eye, EyeOff, Plus, Import, SwitchCamera, Trash2, Copy } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function WalletConnect() {
   const { isConnected, walletAddress, balance, connect, addWallet, switchWallet, getWallets, removeWallet, getSecretKey } = useXRPL();
@@ -20,6 +21,7 @@ export default function WalletConnect() {
   const [secretKey, setSecretKey] = useState('');
   const [showSecretKeyInput, setShowSecretKeyInput] = useState(false);
   const [showSecretKey, setShowSecretKey] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const wallets = getWallets();
 
@@ -157,6 +159,14 @@ export default function WalletConnect() {
     }
   };
 
+  const handleCopyAddress = (address: string) => {
+    navigator.clipboard.writeText(address);
+    toast({
+      title: "Address copied",
+      description: "Wallet address has been copied to clipboard",
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -223,29 +233,13 @@ export default function WalletConnect() {
         </div>
       ) : wallets.length === 0 ? (
         <div className="space-y-4">
-          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <Input
-              value={newAccountName}
-              onChange={(e) => setNewAccountName(e.target.value)}
-              placeholder="Account name (optional)"
-              className="flex-1 max-w-[300px]"
-            />
-            <Button
-              onClick={handleAddAccount}
-              disabled={isLoading}
-              className="bg-[#008CFF] hover:bg-[#0070CC]"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create New Account
-            </Button>
-          </div>
           <Button
             variant="outline"
             onClick={handleImportClick}
             className="w-full max-w-[300px]"
           >
             <Import className="mr-2 h-4 w-4 cursor-pointer" />
-            Import Existing Account
+            Import Account with Secret Key
           </Button>
         </div>
       ) : (
@@ -255,11 +249,26 @@ export default function WalletConnect() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Current Account:</span>
-                  <span className="font-mono text-sm truncate max-w-[200px]">{walletAddress}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm truncate max-w-[200px]">{walletAddress}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopyAddress(walletAddress || '')}
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Balance:</span>
-                  <span className="font-medium">{balance} XRP</span>
+                  <span className="font-medium">
+                    {!balance ? '0 RLUSD' : 
+                      typeof balance === 'object' 
+                        ? `${balance.xrp} RLUSD${balance.rlusd !== '0' ? `, ${balance.rlusd} RLUSD` : ''}`
+                        : `${balance} RLUSD`}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -274,14 +283,24 @@ export default function WalletConnect() {
                     <div className="flex items-center justify-between">
                       <div className="overflow-hidden">
                         <div className="font-medium">{wallet.name}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-[200px]">{wallet.address}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-gray-500 truncate max-w-[200px]">{wallet.address}</div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyAddress(wallet.address)}
+                            className="text-gray-600 hover:text-gray-900"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
                         {showSecretKey === wallet.seed && (
                           <div className="mt-2 text-xs font-mono bg-slate-100 p-2 rounded overflow-x-auto">
                             Secret Key: {wallet.seed}
                           </div>
                         )}
                       </div>
-                      <div className="flex space-x-1">
+                      <div className="flex items-center gap-1">
                         {wallet.address !== walletAddress && (
                           <Button 
                             variant="ghost" 
@@ -322,38 +341,14 @@ export default function WalletConnect() {
 
           <div>
             <h3 className="text-lg font-medium mb-3">Add New Account</h3>
-            <Tabs defaultValue="create">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="create">Create New</TabsTrigger>
-                <TabsTrigger value="import">Import Existing</TabsTrigger>
-              </TabsList>
-              <TabsContent value="create" className="space-y-4 flex flex-col items-center">
-                <Input
-                  value={newAccountName}
-                  onChange={(e) => setNewAccountName(e.target.value)}
-                  placeholder="Account name (optional)"
-                  className="max-w-[300px]"
-                />
-                <Button
-                  onClick={handleAddAccount}
-                  disabled={isLoading}
-                  className="max-w-[300px] bg-[#008CFF] hover:bg-[#0070CC] rounded-full cursor-pointer"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create New Account
-                </Button>
-              </TabsContent>
-              <TabsContent value="import" className="flex flex-col items-center">
-                <Button
-                  variant="outline"
-                  onClick={handleImportClick}
-                  className="w-full max-w-[300px] cursor-pointer"
-                >
-                  <Import className="mr-2 h-4 w-4" />
-                  Import With Secret Key
-                </Button>
-              </TabsContent>
-            </Tabs>
+            <Button
+              variant="outline"
+              onClick={handleImportClick}
+              className="w-full max-w-[300px] cursor-pointer"
+            >
+              <Import className="mr-2 h-4 w-4" />
+              Import With Secret Key
+            </Button>
           </div>
 
           {status && (

@@ -7,7 +7,7 @@ interface XRPLState {
   xrplService: XRPLService | null;
   isConnected: boolean;
   walletAddress: string | null;
-  balance: string | null;
+  balance: { xrp: string; rlusd: string } | string | null;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   addWallet: (name?: string, secretKey?: string) => Promise<void>;
@@ -15,6 +15,11 @@ interface XRPLState {
   removeWallet: (address: string) => Promise<void>;
   getWallets: () => { seed: string; address: string; name?: string }[];
   sendPayment: (destination: string, amount: string) => Promise<void>;
+  sendPaymentWithTrustlineHandling: (destination: string, amount: string, options?: {
+    autoSetupTrustlineForSender?: boolean,
+    generateQRForRecipient?: boolean,
+    retryAsXRP?: boolean
+  }) => Promise<{success: boolean, result?: any, qrData?: string, error?: string}>;
   getBalance: () => Promise<void>;
   getSecretKey: (address: string) => string | null;
   getTransactionHistory: (limit?: number) => Promise<{
@@ -103,6 +108,23 @@ export const useXRPL = create<XRPLState>((set, get) => ({
 
     await xrplService.sendPayment(destination, amount);
     await get().getBalance();
+  },
+
+  sendPaymentWithTrustlineHandling: async (destination: string, amount: string, options?: {
+    autoSetupTrustlineForSender?: boolean,
+    generateQRForRecipient?: boolean,
+    retryAsXRP?: boolean
+  }) => {
+    const { xrplService } = get();
+    if (!xrplService) {
+      throw new Error('XRPL service not connected');
+    }
+
+    const result = await xrplService.sendPaymentWithTrustlineHandling(destination, amount, options);
+    if (result.success) {
+      await get().getBalance();
+    }
+    return result;
   },
 
   getBalance: async () => {
