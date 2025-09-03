@@ -1,0 +1,4 @@
+Rewrite backend to handle wallets, pinata, and XRPL functions
+Draw out new UX (UI is good)
+Go through deps after backend changes
+Make better logo and name
