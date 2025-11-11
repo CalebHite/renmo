@@ -157,7 +157,7 @@ export class XRPLService {
 
     // Save metadata to Pinata
     await this.pinataService.saveAccountMetadata(walletData.address, {
-      name: walletData.name,
+      name: walletData.name ?? '',
       address: walletData.address,
       createdAt: new Date().toISOString(),
       lastUsed: new Date().toISOString()
@@ -418,10 +418,12 @@ export class XRPLService {
       const signed = this.wallet.sign(prepared);
       const result = await this.client.submitAndWait(signed.tx_blob);
       
-      if (result.result.meta?.TransactionResult === 'tesSUCCESS') {
+      const transactionResult = typeof result.result.meta === 'string' ? result.result.meta : result.result.meta?.TransactionResult;
+      
+      if (transactionResult === 'tesSUCCESS') {
         console.log('Payment successful');
         return result;
-      } else if (result.result.meta?.TransactionResult === 'tecPATH_DRY') {
+      } else if (transactionResult === 'tecPATH_DRY') {
         // If we get tecPATH_DRY, it means there's no liquidity path
         // Let's verify both trustlines are properly set up
         const senderTrustline = await this.checkTrustline(this.wallet.address);
@@ -437,7 +439,7 @@ export class XRPLService {
         // If both trustlines exist but we still get tecPATH_DRY, it might be a liquidity issue
         throw new Error('No liquidity path found. Please ensure both accounts have sufficient balance and proper trustlines.');
       } else {
-        throw new Error(`Payment failed with code: ${result.result.meta?.TransactionResult}`);
+        throw new Error(`Payment failed with code: ${transactionResult}`);
       }
     } catch (error) {
       console.error('Error sending payment:', error);
@@ -560,8 +562,8 @@ export class XRPLService {
 
     try {
       // First, configure account to allow rippling
-      const accountSet = {
-        TransactionType: 'AccountSet',
+      const accountSet: any = {
+        TransactionType: 'AccountSet' as const,
         Account: this.wallet.address,
         SetFlag: 8 // asfDefaultRipple
       };
@@ -585,11 +587,13 @@ export class XRPLService {
       const signed = this.wallet.sign(prepared);
       const result = await this.client.submitAndWait(signed.tx_blob);
       
-      if (result.result.meta?.TransactionResult === 'tesSUCCESS') {
+      const transactionResult = typeof result.result.meta === 'string' ? result.result.meta : result.result.meta?.TransactionResult;
+      
+      if (transactionResult === 'tesSUCCESS') {
         console.log('Trustline setup successful');
         return { status: 'success', result };
       } else {
-        throw new Error(`Trustline setup failed with code: ${result.result.meta?.TransactionResult}`);
+        throw new Error(`Trustline setup failed with code: ${transactionResult}`);
       }
     } catch (error) {
       console.error('Error setting up trustline:', error);
@@ -740,8 +744,8 @@ Once the trustline is established, you'll be able to receive ${RLUSD_CURRENCY} a
             // XRP amount in drops, convert to XRP then to USD
             const drops = parseInt(amountField);
             const xrp = drops / 1000000;
-            const usdValue = (xrp * 0.5).toFixed(2); // Using 0.5 as fixed XRP/USD rate
-            amount = `$${usdValue} USD`;
+            const usdValue = xrp.toFixed(2); // Not actual USD value, just XRP value
+            amount = `$${usdValue} RLUSD`;
             destination = tx.tx_json.Destination;
           }
         }
